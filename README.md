@@ -1,2 +1,2 @@
-# Nanite #
-Built using Java and LWJGL, Nanite is a 2d game engine used to make a 2d drifting game
+# Racing Game #
+Built using Java and LWJGL, created a game engine used to make a 2d drifting game.
