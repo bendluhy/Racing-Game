@@ -1,7 +1,11 @@
 package engine;
 
+import engine.scene.Scene;
+import engine.scene.SceneManager;
 import engine.util.Color;
 import engine.util.Texture;
+import game.scenes.Freestyle;
+import game.scenes.MainMenu;
 import org.lwjgl.*;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
@@ -18,11 +22,19 @@ public class Window {
     private long windowID;
     private Renderer renderer;
     private Texture texture;
+    private Input input;
+    private SceneManager sceneManager;
+    private Scene scenes[];
     public Window() {
         System.out.println("Using LWJGL version:" + Version.getVersion());
         init();
         this.renderer = new Renderer();
         this.texture = new Texture("res/bg.png");
+        this.input = new Input(windowID);
+        MainMenu menu = new MainMenu();
+        Freestyle freestyle = new Freestyle();
+        this.sceneManager = new SceneManager(menu, this.renderer, this.input);
+        this.sceneManager.addScene(freestyle);
         loop();
         glfwFreeCallbacks(windowID);
         glfwDestroyWindow(windowID);
@@ -88,7 +100,7 @@ public class Window {
     private void loop() {
         while (!glfwWindowShouldClose(windowID)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            renderer.renderIMG(0,0,this.texture);
+            sceneManager.render();
             glfwSwapBuffers(windowID);
             glfwPollEvents();
         }

@@ -2,11 +2,14 @@ package engine.util;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.glGenerateMipmap;
 import static org.lwjgl.stb.STBImage.*;
 
 public class Texture {
@@ -15,39 +18,51 @@ public class Texture {
     int w;
     public Texture(String path) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer width = stack.mallocInt(1);
-            IntBuffer height = stack.mallocInt(1);
-            IntBuffer channels = stack.mallocInt(1);
-
+            IntBuffer widthBuffer = stack.mallocInt(1);
+            IntBuffer heightBuffer = stack.mallocInt(1);
+            IntBuffer channelsBuffer = stack.mallocInt(1);
 
             // Load image
-            ByteBuffer image = stbi_load(path, width, height, channels, 4);
+            ByteBuffer image = STBImage.stbi_load(path, widthBuffer, heightBuffer, channelsBuffer, 4);
             if (image == null) {
-                throw new RuntimeException("Failed to load a texture file!" + System.lineSeparator() + stbi_failure_reason());
+                throw new RuntimeException("Failed to load a texture file!" + System.lineSeparator() + STBImage.stbi_failure_reason());
             }
-            this.w = width.get();
-            this.h = height.get();
+            this.w = widthBuffer.get();
+            this.h = heightBuffer.get();
+
+            STBImage.stbi_set_flip_vertically_on_load(true);
+
             // Create a new OpenGL texture
-            Object textureID = GL11.glGenTextures();
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureID);
+            this.textureID = glGenTextures();
+            glBindTexture(GL_TEXTURE_2D, this.textureID);
 
             // Tell OpenGL how to unpack the RGBA bytes. Each component is 1 byte size
-            GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
             // Upload the texture data
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, this.w, this.h, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, image);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.w, this.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 
             // Generate Mip Map
-            GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+            glGenerateMipmap(GL_TEXTURE_2D);
+
             // Setup the texture parameters
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
             // Free the memory
-            stbi_image_free(image);
+            STBImage.stbi_image_free(image);
+
+            // Unbind the texture
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
+    }
+    public void bind() {
+        glBindTexture(GL_TEXTURE_2D, this.textureID);
+    }
+    public void unBind() {
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     public int getHeight() {
         return h;
